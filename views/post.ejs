@@ -43,8 +43,10 @@
                     <h6><span class="text-info"><%= post.content %>  </span></h6>
                     <h9><span class="text-muted"><%=  post.date %> </span></h9>
                     </p><hr>
+                    <% if(islogin){ %> 
                     <a href="/edit/<%- post._id %>"><input class="btn btn-secondary mb-2" type="submit" value="Edit"></a>
                     <a href="/delete/<%- post._id  %>"><input class="btn btn-danger mb-2" type="submit" value="Delete"></a>
+                    <% } %> 
         </div>
         
     </body>

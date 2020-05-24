@@ -6,6 +6,9 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 const expressValidator = require('express-validator');
 const flash = require('connect-flash');
+const ck=require('cookie-parser');
+
+app.use(ck())
 
 // set EJS template engine
 app.set('view engine', 'ejs');
@@ -31,6 +34,22 @@ app.use(function (req, res, next) {
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
+// auth Middleware
+const auth = (req, res, next)=>{
+    let cookie=req.cookies;
+    console.log(cookie);
+    if(cookie.login){
+        next();
+    }
+    else{
+        sess=req.session;
+        sess.redirect=req.url;
+        res.redirect("/admin");
+    }
+    //next();
+
+}
+
 app.get('/', (req, res)=>{
     Post.find({}, (err, posts)=>{
         if(err){
@@ -39,13 +58,15 @@ app.get('/', (req, res)=>{
             res.render('index', {posts:posts});
         }
     })
+    
 });
 
-app.get('/add', (req, res)=>{
+app.get('/add',auth, (req, res)=>{
     res.render('add');
 });
 
-app.post('/add', (req, res)=>{ 
+app.post('/add',auth, (req, res)=>{ 
+
     let post = new Post();
     post.title = req.body.title;
     post.subTitle = req.body.subtitle;
@@ -68,17 +89,17 @@ app.get('/about', (req, res)=>{
 
 app.get('/posts/:id', (req, res)=>{
     Post.findById(req.params.id, (err, post)=>{
-        res.render('post', {post:post})
+        res.render('post', {post:post,islogin:req.cookies.login})
     })
 })
 
-app.get('/edit/:id', (req, res)=>{
+app.get('/edit/:id', auth, (req, res)=>{
     Post.findById(req.params.id, (err, post)=>{
         res.render('edit', {post:post})
     })
 })
 
-app.post('/edit/:id', (req, res)=>{
+app.post('/edit/:id', auth, (req, res)=>{
     let post = {}
     post.title = req.body.title;
     post.subTitle = req.body.subtitle;
@@ -95,7 +116,7 @@ app.post('/edit/:id', (req, res)=>{
     })
 })
 
-app.get('/delete/:id', (req, res)=>{
+app.get('/delete/:id', auth, (req, res)=>{
     Post.findByIdAndRemove({_id: req.params.id}, (err)=>{
         if(err){
             console.log(err);
@@ -105,6 +126,10 @@ app.get('/delete/:id', (req, res)=>{
     })
 });
 
+app.get('/dashboard',  (req, res)=>{
+    res.render('dashboard')
+})
+
 app.get('/admin', (req, res)=>{
     res.render('login');
 })
@@ -113,14 +138,13 @@ app.post('/admin', (req, res)=>{
     let username = req.body.email;
     let password = req.body.pwd;
     if(username=='nikhil' && password=='nikhil'){
-        res.redirect('/dashboard')
+        res.cookie("login","1");
+         res.redirect(req.session.redirect)
     }else{
         res.send('TrY again')
     }
 })
 
-app.get('/dashboard', (req, res)=>{
-    res.render('dashboard')
-})
+
 
 app.listen(5000);
